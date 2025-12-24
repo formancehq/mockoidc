@@ -20,6 +20,8 @@ type User interface {
 	// Claims returns the ID Token Claims for a User with data appropriate for
 	// the passed scope []string. It builds off the passed BaseIDTokenClaims.
 	Claims([]string, *IDTokenClaims) (jwt.Claims, error)
+
+	OrganizationID() string
 }
 
 // MockUser is a default implementation of the User interface
@@ -31,6 +33,7 @@ type MockUser struct {
 	Phone             string
 	Address           string
 	Groups            []string
+	organizationID    string
 }
 
 // DefaultUser returns a default MockUser that is set in
@@ -44,7 +47,16 @@ func DefaultUser() *MockUser {
 		Address:           "123 Main Street",
 		Groups:            []string{"engineering", "design"},
 		EmailVerified:     true,
+		organizationID:    "org-123456",
 	}
+}
+
+func (u *MockUser) OrganizationID() string {
+	return u.organizationID
+}
+
+func (u *MockUser) SetOrganizationID(orgID string) {
+	u.organizationID = orgID
 }
 
 type mockUserinfo struct {

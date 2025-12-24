@@ -29,7 +29,7 @@ type SessionStore struct {
 // should use in their jwt.Claims building.
 type IDTokenClaims struct {
 	Nonce string `json:"nonce,omitempty"`
-	*jwt.RegisteredClaims
+	jwt.RegisteredClaims
 }
 
 // NewSessionStore initializes the SessionStore for this server
@@ -84,14 +84,14 @@ func (ss *SessionStore) GetSessionByToken(token *jwt.Token) (*Session, error) {
 // AccessToken returns the JWT token with the appropriate claims for
 // an access token
 func (s *Session) AccessToken(config *Config, kp *Keypair, now time.Time) (string, error) {
-	claims := s.registeredClaims(config, config.AccessTTL, now)
+	claims := s.mapClaims(config, config.AccessTTL, now)
 	return kp.SignJWT(claims)
 }
 
 // RefreshToken returns the JWT token with the appropriate claims for
 // a refresh token
 func (s *Session) RefreshToken(config *Config, kp *Keypair, now time.Time) (string, error) {
-	claims := s.registeredClaims(config, config.RefreshTTL, now)
+	claims := s.mapClaims(config, config.RefreshTTL, now)
 	return kp.SignJWT(claims)
 }
 
@@ -110,8 +110,22 @@ func (s *Session) IDToken(config *Config, kp *Keypair, now time.Time) (string, e
 	return kp.SignJWT(claims)
 }
 
-func (s *Session) registeredClaims(config *Config, ttl time.Duration, now time.Time) *jwt.RegisteredClaims {
-	return &jwt.RegisteredClaims{
+func (s *Session) mapClaims(config *Config, ttl time.Duration, now time.Time) jwt.Claims {
+	return &jwt.MapClaims{
+		"aud":             jwt.ClaimStrings{config.ClientID},
+		"exp":             jwt.NewNumericDate(now.Add(ttl)),
+		"jti":             s.SessionID,
+		"iat":             jwt.NewNumericDate(now),
+		"iss":             config.Issuer,
+		"nbf":             jwt.NewNumericDate(now),
+		"sub":             s.User.ID(),
+		"organization_id": s.User.OrganizationID(),
+		"scope":           strings.Join(s.Scopes, " "),
+	}
+}
+
+func (s *Session) registeredClaims(config *Config, ttl time.Duration, now time.Time) jwt.RegisteredClaims {
+	return jwt.RegisteredClaims{
 		Audience:  jwt.ClaimStrings{config.ClientID},
 		ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 		ID:        s.SessionID,

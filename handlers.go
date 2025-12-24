@@ -66,6 +66,7 @@ var (
 		"groups",
 		"iss",
 		"aud",
+		"organization_id",
 	}
 )
 
@@ -207,8 +208,10 @@ func (m *MockOIDC) validateTokenParams(rw http.ResponseWriter, req *http.Request
 	if !equal {
 		return false
 	}
+
 	equal = assertEqual("client_secret", m.ClientSecret,
-		InvalidClient, "Invalid client secret", rw, req)
+	InvalidClient, "Invalid client secret", rw, req)
+	//nolint:staticcheck
 	if !equal {
 		return false
 	}
